@@ -15,6 +15,7 @@
  */
 package org.reaktivity.nukleus.socks.internal.stream;
 
+import static java.lang.String.format;
 import static org.reaktivity.nukleus.buffer.BufferPool.NO_SLOT;
 
 import org.agrona.DirectBuffer;
@@ -150,6 +151,9 @@ public abstract class AbstractStream
         int limit = payload.limit();
         int offset = payload.offset();
         int size = limit - offset;
+
+        System.out.println(format("Received %d bytes", size));
+
         // Fragmented writes might have already occurred
         if (slotIndex != NO_SLOT)
         {
@@ -349,6 +353,7 @@ public abstract class AbstractStream
     {
         if (this.slotWriteOffset == 0)
         {
+            // FIXME create a test to prove this is necessary
             forwarderBufferEmpty.updateEmptyBuffer(true);
             return;
         }

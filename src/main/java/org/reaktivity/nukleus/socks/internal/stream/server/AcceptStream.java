@@ -15,6 +15,7 @@
  */
 package org.reaktivity.nukleus.socks.internal.stream.server;
 
+import static java.lang.String.format;
 import static org.reaktivity.nukleus.socks.internal.stream.types.SocksAddressTypes.SOCKS_ADDRESS_DOMAIN;
 import static org.reaktivity.nukleus.socks.internal.stream.types.SocksAddressTypes.SOCKS_ADDRESS_IP4;
 import static org.reaktivity.nukleus.socks.internal.stream.types.SocksAddressTypes.SOCKS_ADDRESS_IP6;
@@ -188,6 +189,7 @@ public final class AcceptStream extends AbstractStream implements AcceptTransiti
                 this::handleNegotiationFlyweight,
                 correlation.acceptThrottle(),
                 correlation.acceptStreamId());
+             doWindow(correlation.acceptThrottle(), correlation.acceptStreamId(), data.payload().sizeof(), 0);
             break;
         case EndFW.TYPE_ID:
         case AbortFW.TYPE_ID:
@@ -320,6 +322,7 @@ public final class AcceptStream extends AbstractStream implements AcceptTransiti
                 this::handleConnectRequestFlyweight,
                 correlation.acceptThrottle(),
                 correlation.acceptStreamId());
+             doWindow(correlation.acceptThrottle(), correlation.acceptStreamId(), data.payload().sizeof(), 0);
             break;
         case EndFW.TYPE_ID:
         case AbortFW.TYPE_ID:
@@ -452,7 +455,8 @@ public final class AcceptStream extends AbstractStream implements AcceptTransiti
             doWindow(
                 correlation.acceptThrottle(),
                 correlation.acceptStreamId(),
-                connectCredit - (socksInitialWindow - receivedAcceptBytes),
+//                connectCredit - (socksInitialWindow - receivedAcceptBytes),
+                connectCredit - socksInitialWindow,
                 connectPadding);
         }
         else
@@ -792,7 +796,11 @@ public final class AcceptStream extends AbstractStream implements AcceptTransiti
 
     public boolean isConnectWindowGreaterThanAcceptWindow()
     {
+        System.out.println(format(
+            "connectCredit: %d, connectPadding: %d, socksInitialWindow: %d, receivedAcceptBytes: %d",
+            connectCredit, connectPadding, socksInitialWindow, receivedAcceptBytes));
         return connectCredit - connectPadding > socksInitialWindow - receivedAcceptBytes;
+//        return connectCredit - connectPadding > socksInitialWindow;
     }
 
     private int getCurrentTargetCredit()

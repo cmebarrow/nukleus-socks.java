@@ -15,6 +15,7 @@
  */
 package org.reaktivity.nukleus.socks.internal.stream.client;
 
+import static java.lang.String.format;
 import static org.reaktivity.nukleus.socks.internal.stream.types.SocksProtocolTypes.REPLY_SUCCEEDED;
 import static org.reaktivity.nukleus.socks.internal.stream.types.SocksProtocolTypes.SOCKS_VERSION_5;
 
@@ -144,6 +145,8 @@ final class ConnectReplyStream extends AbstractStream
                 this::handleFullNegotiationFlyweight,
                 correlation.acceptThrottle(),
                 correlation.acceptStreamId());
+
+            doWindow(correlation.connectReplyThrottle(), correlation.connectReplyStreamId(), data.payload().sizeof(), 0);
             break;
         case EndFW.TYPE_ID:
             final EndFW end = context.endRO.wrap(buffer, index, index + length);
@@ -193,6 +196,7 @@ final class ConnectReplyStream extends AbstractStream
                 this::handleFullConnectionFlyweight,
                 correlation.acceptThrottle(),
                 correlation.acceptStreamId());
+            doWindow(correlation.connectReplyThrottle(), correlation.connectReplyStreamId(), data.payload().sizeof(), 0);
             break;
         case EndFW.TYPE_ID:
             final EndFW end = context.endRO.wrap(buffer, index, index + length);
@@ -228,7 +232,8 @@ final class ConnectReplyStream extends AbstractStream
             doWindow(
                 correlation.connectReplyThrottle(),
                 correlation.connectReplyStreamId(),
-                acceptReplyCredit - (socksInitialWindow - receivedConnectReplyBytes),
+//                acceptReplyCredit - (socksInitialWindow - receivedConnectReplyBytes),
+                acceptReplyCredit - socksInitialWindow,
                 acceptReplyPadding);
         }
         else
@@ -258,6 +263,7 @@ final class ConnectReplyStream extends AbstractStream
                 connectReplyStreamId,
                 this::updateSentPartialData,
                 this::updateSentCompleteData);
+            doWindow(correlation.connectReplyThrottle(), correlation.connectReplyStreamId(), data.payload().sizeof(), 0);
             break;
         case EndFW.TYPE_ID:
             final EndFW end = context.endRO.wrap(buffer, index, index + length);
@@ -329,6 +335,10 @@ final class ConnectReplyStream extends AbstractStream
 
     private void handleHighLevelData(DataFW data)
     {
+        System.out.println("handleHighLevelData");
+        System.out.println(format(
+            "acceptReplyCredit: %d, acceptReplyPadding: %d, socksInitialWindow: %d, receivedConnectReplyBytes: %d",
+            acceptReplyCredit, acceptReplyPadding, socksInitialWindow, receivedConnectReplyBytes));
         OctetsFW payload = data.payload();
         doForwardData(payload,
             correlation.acceptReplyStreamId(),
@@ -427,6 +437,7 @@ final class ConnectReplyStream extends AbstractStream
 
     private void updateForwardBufferEmpty(boolean shouldForwardRemainingWindow)
     {
+        System.out.println("updateForwardBufferEmpty.shouldForwardRemainingWindow: " + shouldForwardRemainingWindow);
         if (isAcceptReplyWindowGreaterThanConnectReplyWindow())
         {
             this.acceptReplyThrottleState = this::handleAcceptReplyThrottleAfterHandshake;
@@ -474,7 +485,11 @@ final class ConnectReplyStream extends AbstractStream
 
     public boolean isAcceptReplyWindowGreaterThanConnectReplyWindow()
     {
+        System.out.println(format(
+            "acceptReplyCredit: %d, acceptReplyPadding: %d, socksInitialWindow: %d, receivedConnectReplyBytes: %d",
+            acceptReplyCredit, acceptReplyPadding, socksInitialWindow, receivedConnectReplyBytes));
         return acceptReplyCredit - acceptReplyPadding >= socksInitialWindow - receivedConnectReplyBytes;
+//        return acceptReplyCredit - acceptReplyPadding >= socksInitialWindow;
     }
 
     private int getCurrentTargetCredit()

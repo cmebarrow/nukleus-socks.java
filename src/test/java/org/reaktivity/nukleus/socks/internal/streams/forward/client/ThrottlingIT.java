@@ -57,7 +57,7 @@ public class ThrottlingIT
     @Parameterized.Parameters
     public static Collection<Object[]> data()
     {
-        return Arrays.asList(new Object[][]{{400}, {10000}, {65536}});
+        return Arrays.asList(new Object[][]{{40}, {80}, {400}, {10000}, {65536}});
     }
 
     public ThrottlingIT(int socksInitialWindow)
@@ -106,6 +106,18 @@ public class ThrottlingIT
         "${server}/client.connect.send.data.throttling.window.100.padding.17/server"
     })
     public void shouldSendDataBothWaysWithThrottlingWindow100Padding17() throws Exception
+    {
+        k3po.finish();
+    }
+
+    @Test
+    @ScriptProperty("serverAccept 'nukleus://target/streams/socks#source'")
+    @Specification({
+        "${route}/client/domain/controller",
+        "${client}/client.connect.send.data.throttling.window.100.padding.7/client",
+        "${server}/client.connect.send.data.throttling.window.100.padding.7/server"
+    })
+    public void shouldSendDataBothWaysWithThrottlingWindow100Padding7() throws Exception
     {
         k3po.finish();
     }
