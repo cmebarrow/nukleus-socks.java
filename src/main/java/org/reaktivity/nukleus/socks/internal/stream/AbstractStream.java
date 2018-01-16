@@ -71,7 +71,6 @@ public abstract class AbstractStream
             .source("socks")
             .sourceRef(sourceRef)
             .correlationId(correlationId)
-            .extension(e -> e.reset())
             .build();
         streamConsumer.accept(
             beginToAcceptReply.typeId(),
@@ -288,7 +287,6 @@ public abstract class AbstractStream
                 payloadBuffer,
                 payloadOffset,
                 payloadLength))
-            .extension(e -> e.reset())
             .build();
         streamEndpoint.accept(
             dataForwardFW.typeId(),
@@ -351,7 +349,7 @@ public abstract class AbstractStream
         FragmentedForwarderBufferData forwarderBufferData,
         FragmentedForwarderBufferEmpty forwarderBufferEmpty)
     {
-        if (this.slotWriteOffset == 0)
+        if (this.slotIndex == NO_SLOT)
         {
             // FIXME create a test to prove this is necessary
             forwarderBufferEmpty.updateEmptyBuffer(true);
